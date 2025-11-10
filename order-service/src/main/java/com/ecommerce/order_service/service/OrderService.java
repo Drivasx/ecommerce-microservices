@@ -1,5 +1,6 @@
 package com.ecommerce.order_service.service;
 
+import com.ecommerce.common.events.OrderCreatedEvent;
 import com.ecommerce.order_service.client.ProductClient;
 import com.ecommerce.order_service.dto.OrderItemRequest;
 import com.ecommerce.order_service.dto.OrderRequest;
@@ -15,8 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -28,6 +28,8 @@ public class OrderService {
 
     @Autowired
     private ProductClient productClient;
+    @Autowired
+    private OrderEventProducer orderEventProducer;
 
     public Order createOrder(OrderRequest orderRequest){
         log.info("Creating new order for client: {}", orderRequest.getCustomerId());
@@ -43,6 +45,8 @@ public class OrderService {
 
         BigDecimal total = BigDecimal.ZERO;
 
+        Map<String, Integer> skus = new HashMap<>();
+
         for(OrderItemRequest itemRequest: orderRequest.getItems()){
             try {
                 ProductResponse product = productClient.getProduct(itemRequest.getSku());
@@ -52,14 +56,19 @@ public class OrderService {
                 orderItem.setQuantity(itemRequest.getQuantity());
                 orderItem.setPrice(product.getPrice());
 
-                total = total.add(product.getPrice()).multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+                total = total.add(product.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity())));
+                skus.put(product.getSku(), orderItem.getQuantity());
             } catch (RuntimeException e) {
                 log.error("Error processing the product: {}", itemRequest.getSku(), e);
                 throw new RuntimeException(e);
             }
         }
         order.setTotal(total);
-        return orderRepository.save(order);
+
+        Order savedOrder = orderRepository.save(order);
+        OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent(order.getId(), skus);
+        orderEventProducer.sendOrderCreatedEvent(orderCreatedEvent);
+        return savedOrder;
     }
 
     public Order getOrder(Integer id){

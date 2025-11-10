@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="JpaBuddyIdeaProjectConfig">
-    <option name="reLastEntityCreationPackage" value="order-service/src/main/java/com/ecommerce/order_service/entity" />
-    <option name="reverseEngineeringLastDbConnectionId" value="6c69f50e-feb0-4476-aad2-c6a0234c9888" />
+    <option name="reLastEntityCreationPackage" value="inventory-service/src/main/java/com/ecommerce/inventory_service/entity" />
+    <option name="reverseEngineeringLastDbConnectionId" value="a637c5d9-5000-47f6-85cd-e33b06c83a8e" />
   </component>
 </project>
